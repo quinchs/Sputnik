@@ -23,6 +23,9 @@ namespace Sputnik.Services
 
         [ConfigSummary("The Mongo connection string.")]
         public string MongoCS { get; set; } = "MONGO_CS_HERE";
+
+        [ConfigSummary("The channel to send alerts to.")]
+        public ulong AlertsChannelId { get; set; } = 1234;
     }
 
     /// <summary>

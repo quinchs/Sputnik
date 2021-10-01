@@ -27,5 +27,8 @@ namespace Sputnik
 
         public static IMongoCollection<ActiveAlert> ActiveAlerts
             => Database.GetCollection<ActiveAlert>("active-alerts");
+
+        public static IMongoCollection<CustomEmote> CustomEmotes
+            => Database.GetCollection<CustomEmote>("custom-emotes");
     }
 }

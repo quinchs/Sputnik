@@ -48,5 +48,15 @@ namespace Sputnik.Generation
 
             return (drawResult, bm);
         }
+
+        public static Image CreateColorImage(Color color)
+        {
+            var bm = new Bitmap(32, 32);
+            var g = Graphics.FromImage(bm);
+
+            g.Clear(color);
+
+            return bm;
+        }
     }
 }
