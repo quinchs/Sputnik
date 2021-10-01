@@ -93,11 +93,11 @@ namespace Sputnik.Generation
                 }
             }
 
-            await Task.WhenAll(work);
+            await Task.WhenAll(work).ConfigureAwait(false);
 
             foreach(var task in work)
             {
-                var d = await task;
+                var d = await task.ConfigureAwait(false);
                 g.DrawImage(d.Image, d.X, d.Y, d.Width, d.Height);
             }
 
@@ -119,12 +119,10 @@ namespace Sputnik.Generation
 
         private static async Task<ImageDetails> GetImageDetailsAsync(string url, int x, int y, int tileSize, int xOffset, int yOffset)
         {
-            var image = await MapDownloaderService.GetTileAsync(url);
+            var image = await MapDownloaderService.GetTileAsync(url).ConfigureAwait(false);
 
             return new ImageDetails(image, (((x * tileSize) + xOffset) - tileSize), ((y * tileSize) + yOffset) - tileSize, tileSize, tileSize);
         }
-
-       
 
         private struct ImageDetails
         {
@@ -188,7 +186,7 @@ namespace Sputnik.Generation
 
         public static async Task DrawPlayerHead(Graphics g, Point loc, int width, int height, string username)
         {
-            var headImage = await MapDownloaderService.GetPlayerheadAsync(username);
+            var headImage = await MapDownloaderService.GetPlayerheadAsync(username).ConfigureAwait(false);
 
             loc.Offset(-(width / 2), -(height / 2));
 

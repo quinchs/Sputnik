@@ -60,10 +60,9 @@ namespace Sputnik.Services
             using (HttpClient client = new HttpClient())
             using(var fs = File.OpenWrite(fPath))
             {
-                
-                var stream = await client.GetStreamAsync(uri);
+                var stream = await client.GetStreamAsync(uri).ConfigureAwait(false);
                 stream.CopyTo(fs);
-                await fs.FlushAsync();
+                await fs.FlushAsync().ConfigureAwait(false);
                 fs.Close();
             }
             s.Stop();
@@ -83,7 +82,7 @@ namespace Sputnik.Services
             using (var client = new HttpClient())
             {
                 var r = await client.GetAsync(Generation.Utils.GetPlayerheadUrl(username));
-                var imageStream = await r.Content.ReadAsStreamAsync();
+                var imageStream = await r.Content.ReadAsStreamAsync().ConfigureAwait(false);
 
                 using(var fs = File.OpenWrite(fPath))
                 {

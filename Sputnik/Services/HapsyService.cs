@@ -24,7 +24,7 @@ namespace Sputnik.Services
             request.AddHeader("Authorization", ConfigService.Config.HapsyToken);
             request.AddFile("file", fPath);
 
-            IRestResponse response = await client.ExecuteAsync(request);
+            IRestResponse response = await client.ExecuteAsync(request).ConfigureAwait(false);
             var json = JsonConvert.DeserializeObject<dynamic>(response.Content);
 
             return json.files[0].url;
@@ -38,7 +38,7 @@ namespace Sputnik.Services
             request.AddHeader("Authorization", ConfigService.Config.HapsyToken);
             request.AddFile("file", data, fname);
 
-            IRestResponse response = await client.ExecuteAsync(request);
+            IRestResponse response = await client.ExecuteAsync(request).ConfigureAwait(false);
             var json = JsonConvert.DeserializeObject<dynamic>(response.Content);
 
             return json.files[0].url;
