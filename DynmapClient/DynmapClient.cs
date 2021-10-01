@@ -80,8 +80,8 @@ namespace Dynmap
                         await WorldStateUpdated?.Invoke(oldStates, worldStates);
                 });
 
-                var oldPlayersState = oldStates.SelectMany(x => x.Value.Players);
-                var newPlayersState = worldStates.SelectMany(x => x.Value.Players);
+                var oldPlayersState = oldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First());
+                var newPlayersState = worldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First()); ;
 
                 var newPlayers = newPlayersState.Where(x => !oldPlayersState.Any(y => y.Name != x.Name));
                 var oldPlayers = oldPlayersState.Where(x => !newPlayersState.Any(y => y.Name != x.Name));
@@ -114,7 +114,18 @@ namespace Dynmap
                 {
                     _ = Task.Run(async () =>
                     {
-                        await PlayersUpdated.Invoke(newPlayersState.ToImmutableArray());
+                        try
+                        {
+                            var t =  PlayersUpdated.Invoke(newPlayersState.ToImmutableArray());
+                            await t;
+
+                            if(t.Exception != null)
+                                LogInternal($"Exception on handler: {t.Exception}");
+                        }
+                        catch(Exception x)
+                        {
+                            LogInternal($"Exception on handler: {x}");
+                        }
                     });
                 }
 

@@ -188,22 +188,11 @@ namespace Sputnik.Generation
 
         public static async Task DrawPlayerHead(Graphics g, Point loc, int width, int height, string username)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                var r = await client.GetAsync(GetPlayerheadUrl(username));
+            var headImage = await MapDownloaderService.GetPlayerheadAsync(username);
 
-                if (!r.IsSuccessStatusCode)
-                {
-                    Logger.Warn($"Failed to get playerhead: {r.StatusCode}", Severity.Rest);
-                    return;
-                }
+            loc.Offset(-(width / 2), -(height / 2));
 
-                var imageStream = await r.Content.ReadAsStreamAsync();
-
-                loc.Offset(-(width / 2), -(height / 2));
-
-                g.DrawImage(Image.FromStream(imageStream), loc.X, loc.Y, width, height);
-            }
+            g.DrawImage(headImage, loc.X, loc.Y, width, height);
         }
 
         public static string GetPlayerheadUrl(string username)

@@ -7,11 +7,13 @@ using Sputnik.Generation;
 using Sputnik.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sputnik.Handlers
@@ -22,6 +24,8 @@ namespace Sputnik.Handlers
 
         private DiscordSocketClient _discordClient;
         private DynmapClient _dynmapClient;
+        private static int padding;
+        private SemaphoreSlim _semaphoreSlim;
 
         public override void Initialize(DiscordSocketClient client, DynmapClient dynmap)
         {
@@ -31,126 +35,153 @@ namespace Sputnik.Handlers
             if (!Directory.Exists(ActiveAlertsDir))
                 Directory.CreateDirectory(ActiveAlertsDir);
 
+            _semaphoreSlim = new SemaphoreSlim(1, 1);
+
             dynmap.PlayersUpdated += CheckAlerts;
         }
 
         private async Task CheckAlerts(IReadOnlyCollection<Dynmap.API.Player> arg)
         {
-            var alertAreas = await MongoService.AlertCollection.Find(x => true).ToListAsync();
-            var whitelistedPlayers = await MongoService.Whitelist.Find(x => true).ToListAsync();
+            await _semaphoreSlim.WaitAsync();
 
-            var unwhitelistedPlayers = arg.Where(x => !whitelistedPlayers.Any(y => y.Usernames.Contains(x.Account)));
+            Interlocked.Add(ref padding, 1);
 
-            foreach(var area in alertAreas)
+            try
             {
-                var activeAlert = await MongoService.ActiveAlerts.Find(x => x.AlertArea.Name == area.Name).FirstOrDefaultAsync();
-                bool hasActiveAlert = activeAlert != null;
+                var sw = new Stopwatch();
+                sw.Start();
 
-                var intersectingPlayers = unwhitelistedPlayers.Where(x => MathUtils.CalculateDistance(area.X, area.Z, x.X, x.Z) <= area.Radius);
+                var alertAreas = await MongoService.AlertCollection.Find(x => true).ToListAsync().ConfigureAwait(false);
+                var whitelistedPlayers = await MongoService.Whitelist.Find(x => true).ToListAsync().ConfigureAwait(false);
 
-                if (intersectingPlayers.Any() && !hasActiveAlert)
+                var unwhitelistedPlayers = arg.Where(x => !whitelistedPlayers.Any(y => y.Usernames.Contains(x.Account)));
+
+                foreach (var area in alertAreas)
                 {
-                    // new alert
-                    activeAlert = new ActiveAlert()
-                    {
-                        AlertArea = area,
-                        MessageId = 0,
-                        Positions = new Dictionary<string, AlertUser>(),
-                    };
+                    var activeAlert = await MongoService.ActiveAlerts.Find(x => x.AlertArea.Name == area.Name).FirstOrDefaultAsync().ConfigureAwait(false);
+                    bool hasActiveAlert = activeAlert != null;
 
-                    foreach(var p in intersectingPlayers)
+                    var intersectingPlayers = unwhitelistedPlayers.Where(x => MathUtils.CalculateDistance(area.X, area.Z, (int)x.X, (int)x.Z) <= area.Radius);
+
+                    if (intersectingPlayers.Any() && !hasActiveAlert)
                     {
-                        var acc = new AlertUser()
+                        // new alert
+                        activeAlert = new ActiveAlert()
                         {
-                            Color = 0,
-                            DateEntered = DateTime.UtcNow,
-                            DateLeft = null,
-                            Username = p.Account,
-                            Positions = new List<UserCoordinates>()
+                            AlertArea = area,
+                            MessageId = 0,
+                            Positions = new Dictionary<string, AlertUser>(),
                         };
 
-                        acc.Positions.Add(new UserCoordinates(p));
-
-                        activeAlert.Positions.Add(p.Account, acc);
-                    }
-
-                    var img = await CreateAlertImageAsync(activeAlert);
-
-                    await SendAlertAsync(img, activeAlert);
-                }
-                else if(hasActiveAlert && intersectingPlayers.Any())
-                {
-                    // update the player positions
-                    foreach(var player in intersectingPlayers)
-                    {
-                        var alertUser = activeAlert.Positions.GetValueOrDefault(player.Account) ?? new AlertUser()
+                        foreach (var p in intersectingPlayers)
                         {
-                            Positions = new List<UserCoordinates>(),
-                            DateEntered = DateTime.UtcNow,
-                            Username = player.Account
-                        };
+                            var acc = new AlertUser()
+                            {
+                                Color = 0,
+                                DateEntered = DateTime.UtcNow,
+                                DateLeft = null,
+                                Username = p.Account,
+                                Positions = new List<UserCoordinates>()
+                            };
 
-                        alertUser.Positions.Add(new UserCoordinates(player));
+                            acc.Positions.Add(new UserCoordinates(p));
 
-                        activeAlert.Positions[player.Account] = alertUser;
-                    }
-
-                    var leftPlayers = activeAlert.Positions.Where(x => !intersectingPlayers.Any(y => y.Name == x.Key) && !x.Value.DateLeft.HasValue);
-
-                    foreach(var l in leftPlayers)
-                    {
-                        l.Value.DateLeft = DateTime.UtcNow;
-                        
-                        activeAlert.Positions[l.Key] = l.Value;
-                    }
-
-                    foreach(var user in activeAlert.Positions.Where(x => !intersectingPlayers.Any(y => y.Name == x.Key)))
-                    {
-                        var pl = arg.FirstOrDefault(x => x.Account == user.Key);
-
-                        if(pl != null)
-                        {
-                            user.Value.Positions.Add(new UserCoordinates(pl));
-
-                            activeAlert.Positions[user.Key] = user.Value;
+                            activeAlert.Positions.Add(p.Account, acc);
                         }
+
+                        var img = await CreateAlertImageAsync(activeAlert).ConfigureAwait(false);
+
+                        await SendAlertAsync(img, activeAlert).ConfigureAwait(false);
                     }
+                    else if (hasActiveAlert && intersectingPlayers.Any())
+                    {
+                        // update the player positions
+                        foreach (var player in intersectingPlayers)
+                        {
+                            var alertUser = activeAlert.Positions.GetValueOrDefault(player.Account) ?? new AlertUser()
+                            {
+                                Positions = new List<UserCoordinates>(),
+                                DateEntered = DateTime.UtcNow,
+                                Username = player.Account
+                            };
 
-                    // update the alert
+                            alertUser.Positions.Add(new UserCoordinates(player));
 
-                    var image = await CreateAlertImageAsync(activeAlert);
+                            activeAlert.Positions[player.Account] = alertUser;
+                        }
 
-                    await UpdateAlertAsync(image, activeAlert);
+                        var leftPlayers = activeAlert.Positions.Where(x => !intersectingPlayers.Any(y => y.Name == x.Key) && !x.Value.DateLeft.HasValue);
+
+                        foreach (var l in leftPlayers)
+                        {
+                            l.Value.DateLeft = DateTime.UtcNow;
+
+                            activeAlert.Positions[l.Key] = l.Value;
+                        }
+
+                        foreach (var user in activeAlert.Positions.Where(x => !intersectingPlayers.Any(y => y.Name == x.Key)))
+                        {
+                            var pl = arg.FirstOrDefault(x => x.Account == user.Key);
+
+                            if (pl != null)
+                            {
+                                user.Value.Positions.Add(new UserCoordinates(pl));
+
+                                activeAlert.Positions[user.Key] = user.Value;
+                            }
+                        }
+
+                        // update the alert
+
+                        var image = await CreateAlertImageAsync(activeAlert).ConfigureAwait(false);
+
+                        await UpdateAlertAsync(image, activeAlert).ConfigureAwait(false);
+                    }
+                    else if (!intersectingPlayers.Any() && hasActiveAlert)
+                    {
+                        // close alert
+                        var img = await CreateAlertImageAsync(activeAlert).ConfigureAwait(false);
+                        await CloseAlertAsync(img, activeAlert).ConfigureAwait(false);
+                    }
                 }
-                else if(!intersectingPlayers.Any() && hasActiveAlert)
-                {
-                    // close alert
-                    var img = await CreateAlertImageAsync(activeAlert);
-                    await CloseAlertAsync(img, activeAlert);
-                }
+
+                sw.Stop();
+
+                Logger.Write($"Alert handler took {sw.ElapsedMilliseconds}ms to execute", new Severity[] { Severity.Core, Severity.Debug }, nameof(AlertsHandler));
+            }
+            catch(Exception x)
+            {
+                Logger.Write(x, new Severity[] { Severity.Core, Severity.Error }, nameof(AlertsHandler));
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
             }
         }
 
         public async Task SendAlertAsync(AlertImageResult img, ActiveAlert alert)
         {
             SetColorsAsync(ref alert, img);
-            await CreateOrUpdateEmotes();
+            await CreateOrUpdateEmotes(alert);
 
             var map = GetColorMap(alert);
 
-            var fname = ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png";
+            var fname = Path.GetFullPath(ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png");
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
+            var imageLink = await HapsyService.GetImageLinkAsync(fname);
+
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
-            var message = await channel.SendMessageAsync("", embed: new EmbedBuilder()
+            var message = await channel.SendMessageAsync(embed: new EmbedBuilder()
                 .WithColor(Discord.Color.Orange)
                 .WithTitle("Alert triggered")
                 .WithDescription($"Alert area {alert.AlertArea.Name} has been triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
-                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR:{alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                .AddField("Colors", string.Join("\n", map.Select(x => $"")))
-                .WithImageUrl($"attachments://{fname}")
+                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
+                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
+                .WithImageUrl(imageLink)
                 .Build()         
             );
 
@@ -162,13 +193,15 @@ namespace Sputnik.Handlers
         public async Task UpdateAlertAsync(AlertImageResult img, ActiveAlert alert)
         {
             SetColorsAsync(ref alert, img);
-            await CreateOrUpdateEmotes();
+            await CreateOrUpdateEmotes(alert);
 
             var map = GetColorMap(alert);
 
-            var fname = ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png";
+            var fname = Path.GetFullPath(ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png");
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
+
+            var imageLink = await HapsyService.GetImageLinkAsync(fname);
 
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
@@ -178,10 +211,10 @@ namespace Sputnik.Handlers
                 .WithColor(Discord.Color.Orange)
                 .WithTitle("Alert triggered")
                 .WithDescription($"Alert area {alert.AlertArea.Name} has been triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
-                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR:{alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB}:{x.Value.Id}> - {x.Key}")))
-                .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().X}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
-                .WithImageUrl($"attachments://{fname}")
+                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
+                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
+                .WithImageUrl(imageLink)
                 .Build());
 
             await MongoService.ActiveAlerts.ReplaceOneAsync(x => x.MessageId == message.Id, alert, new ReplaceOptions() { IsUpsert = true });
@@ -190,13 +223,15 @@ namespace Sputnik.Handlers
         public async Task CloseAlertAsync(AlertImageResult img, ActiveAlert alert)
         {
             SetColorsAsync(ref alert, img);
-            await CreateOrUpdateEmotes();
+            await CreateOrUpdateEmotes(alert);
 
             var map = GetColorMap(alert);
 
-            var fname = ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png";
+            var fname = Path.GetFullPath(ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png");
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
+
+            var imageLink = await HapsyService.GetImageLinkAsync(fname);
 
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
@@ -206,10 +241,10 @@ namespace Sputnik.Handlers
                 .WithColor(Discord.Color.Green)
                 .WithTitle("Alert cleared")
                 .WithDescription($"Alert area {alert.AlertArea.Name} was triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
-                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR:{alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                .AddField("Colors", string.Join("\n", map.Select(x => $"")))
-                .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().X}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
-                .WithImageUrl($"attachments://{fname}")
+                .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
+                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}\n> Left: {TimestampTag.FromDateTime(x.Value.DateLeft.GetValueOrDefault(DateTime.UtcNow), TimestampTagStyles.Relative)}")))
+                .WithImageUrl(imageLink)
                 .Build());
 
             await MongoService.ActiveAlerts.DeleteOneAsync(x => x.MessageId == alert.MessageId);
@@ -253,11 +288,14 @@ namespace Sputnik.Handlers
             return dict;
         }
 
-        public async Task CreateOrUpdateEmotes()
+        public async Task CreateOrUpdateEmotes(ActiveAlert al = null)
         {
             var handler = HandlerService.GetHandlerInstance<CustomEmoteHandler>();
 
-            foreach(var alert in MongoService.ActiveAlerts.AsQueryable())
+            List<ActiveAlert> alerts = new List<ActiveAlert>(MongoService.ActiveAlerts.AsQueryable().ToList());
+            alerts.Add(al);
+
+            foreach(var alert in alerts)
             {
                 foreach(var pos in alert.Positions)
                 {

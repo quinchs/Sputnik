@@ -31,7 +31,7 @@
         public List<Update> Updates { get; set; }
 
         [JsonProperty("timestamp")]
-        public int Timestamp { get; set; }
+        public long Timestamp { get; set; }
     }
 
     public partial class Player
@@ -46,16 +46,16 @@
         public string Name { get; set; }
 
         [JsonProperty("x")]
-        public int X { get; set; }
+        public double X { get; set; }
 
         [JsonProperty("y")]
-        public int Y { get; set; }
+        public double Y { get; set; }
 
         [JsonProperty("health")]
-        public int Health { get; set; }
+        public double Health { get; set; }
 
         [JsonProperty("z")]
-        public int Z { get; set; }
+        public double Z { get; set; }
 
         [JsonProperty("sort")]
         public int Sort { get; set; }

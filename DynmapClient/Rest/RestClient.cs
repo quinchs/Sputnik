@@ -47,26 +47,34 @@ namespace Dynmap
 
         private async Task<T> SendAsync<T>(string endpoint, string method, object payload = null) where T : class
         {
-            var message = new HttpRequestMessage(GetMethod(method), _baseUri + endpoint);
-
-            if (payload != null)
+            try
             {
-                message.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                var message = new HttpRequestMessage(GetMethod(method), _baseUri + endpoint);
+
+                if (payload != null)
+                {
+                    message.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                }
+
+                var s = new Stopwatch();
+                s.Start();
+                var response = await _client.SendAsync(message);
+                s.Stop();
+
+                _dynmapClient.LogInternal($"{method} {endpoint}: {response.StatusCode} {s.ElapsedMilliseconds}ms");
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (content != null)
+                {
+                    return JsonConvert.DeserializeObject<T>(content);
+                }
+                else return null;
             }
-
-            var s = new Stopwatch();
-            s.Start();
-            var response = await _client.SendAsync(message);
-            s.Stop();
-
-            _dynmapClient.LogInternal($"{method} {endpoint}: {response.StatusCode} {s.ElapsedMilliseconds}ms");
-            var content = await response.Content.ReadAsStringAsync();
-
-            if (content != null)
+            catch(Exception x)
             {
-                return JsonConvert.DeserializeObject<T>(content);
+                _dynmapClient.LogInternal($"Failed to get {endpoint}: {x}");
+                return null;
             }
-            else return null;
         }
 
         private async Task SendAsync(string endpoint, string method, object payload = null)

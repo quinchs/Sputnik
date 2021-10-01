@@ -33,10 +33,10 @@ namespace Sputnik.Handlers
         {
             var image = ImageGenerator.CreateColorImage(color);
 
-            var fpath = EmoteDirectory + $"/{color.ToArgb()}.png";
+            var fpath = EmoteDirectory + $"/{color.ToArgb():X}.png";
             image.Save(fpath, ImageFormat.Png);
 
-            var emote = await _guild.CreateEmoteAsync($"{color.ToArgb()}", new Discord.Image(fpath));
+            var emote = await _guild.CreateEmoteAsync($"{color.ToArgb():X}", new Discord.Image(fpath));
 
             var customEmote = new CustomEmote()
             {

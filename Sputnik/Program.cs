@@ -42,17 +42,16 @@ namespace Sputnik
 
             await _discordClient.LoginAsync(TokenType.Bot, ConfigService.Config.Token);
 
-            await _discordClient.StartAsync();
-
-            await _discordClient.SetGameAsync("the Stars!", type: ActivityType.Listening);
-
             await DynmapClient.ConnectAsync();
-
 
             CommandService = new DualPurposeCommandService();
             CommandService.Log += _discordClient_Log;
 
             var handlerService = new HandlerService(_discordClient, DynmapClient);
+
+            await _discordClient.StartAsync();
+
+            await _discordClient.SetGameAsync("the Stars!", type: ActivityType.Listening);
 
             var mapService = new MapDownloaderService(DynmapClient);
 

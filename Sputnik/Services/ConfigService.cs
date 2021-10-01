@@ -26,6 +26,9 @@ namespace Sputnik.Services
 
         [ConfigSummary("The channel to send alerts to.")]
         public ulong AlertsChannelId { get; set; } = 1234;
+
+        [ConfigSummary("The token to authenticate with to the hapsy api.")]
+        public string HapsyToken { get; set; } = "HAPSY_TOKEN_HERE";
     }
 
     /// <summary>

@@ -25,8 +25,8 @@ namespace Sputnik.DataModels
 
         public UserCoordinates(Dynmap.API.Player player)
         {
-            this.X = player.X;
-            this.Z = player.Y;
+            this.X = (int)player.X;
+            this.Z = (int)player.Z;
             this.Time = DateTime.UtcNow;
             this.Username = player.Account;
             this.World = player.World;
