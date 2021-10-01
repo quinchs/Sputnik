@@ -14,6 +14,7 @@ namespace Sputnik.DataModels
         public ulong MessageId { get; set; }
         public CoordAlerts AlertArea { get; set; }
         public Dictionary<string, AlertUser> Positions { get; set; }
+        public DateTime LastUpdateImage { get; set; }
     }
 
     public class AlertUser

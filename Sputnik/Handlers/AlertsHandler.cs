@@ -170,9 +170,9 @@ namespace Sputnik.Handlers
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
-            var imageLink = await HapsyService.GetImageLinkAsync(fname);
-
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
+
+            var imageLink = await GetImageUrl(fname, ref alert, null);
 
             var message = await channel.SendMessageAsync(embed: new EmbedBuilder()
                 .WithColor(Discord.Color.Orange)
@@ -201,11 +201,11 @@ namespace Sputnik.Handlers
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
-            var imageLink = await HapsyService.GetImageLinkAsync(fname);
-
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
             var message = await channel.GetMessageAsync(alert.MessageId) as IUserMessage;
+
+            var imageLink = await GetImageUrl(fname, ref alert, message);
 
             await message.ModifyAsync(x => x.Embed = new EmbedBuilder()
                 .WithColor(Discord.Color.Orange)
@@ -231,11 +231,13 @@ namespace Sputnik.Handlers
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
-            var imageLink = await HapsyService.GetImageLinkAsync(fname);
+            
 
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
             var message = await channel.GetMessageAsync(alert.MessageId) as IUserMessage;
+
+            var imageLink = await GetImageUrl(fname, ref alert, message);
 
             await message.ModifyAsync(x => x.Embed = new EmbedBuilder()
                 .WithColor(Discord.Color.Green)
@@ -250,6 +252,21 @@ namespace Sputnik.Handlers
             await MongoService.ActiveAlerts.DeleteOneAsync(x => x.MessageId == alert.MessageId);
             RemoveColorEmotes(map.Select(x => x.Value));
         }
+
+        private Task<string> GetImageUrl(string fPath, ref ActiveAlert alert, IUserMessage msg)
+        {
+            if (msg != null && (DateTime.UtcNow - alert.LastUpdateImage).TotalSeconds > 10)
+            {
+                return Task.FromResult(msg.Embeds.First().Image.Value.Url);
+            }
+            else
+            {
+                alert.LastUpdateImage = DateTime.UtcNow;
+                return HapsyService.GetImageLinkAsync(fPath);
+            }
+
+        }
+
 
         private void RemoveColorEmotes(IEnumerable<CustomEmote> emotes)
         {
