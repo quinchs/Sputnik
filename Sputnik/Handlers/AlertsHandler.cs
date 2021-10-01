@@ -309,7 +309,7 @@ namespace Sputnik.Handlers
 
         private Task<string> GetImageUrl(string fPath, ref ActiveAlert alert, IUserMessage msg)
         {
-            if (msg != null && (DateTime.UtcNow - alert.LastUpdateImage).TotalSeconds > 10)
+            if (msg != null && (DateTime.UtcNow - alert.LastUpdateImage).TotalSeconds < 10)
             {
                 return Task.FromResult(msg.Embeds.First().Image.Value.Url);
             }
