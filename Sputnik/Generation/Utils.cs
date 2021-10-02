@@ -142,6 +142,18 @@ namespace Sputnik.Generation
             }
         }
 
+        public static void DrawCircle(Graphics g, Color c, Point loc, BackgroundResult r, int blockRadius)
+        {
+            var center = ToRelativePoint(loc, r);
+            var relativeRadius = blockRadius * r.BlocksPerPixel;
+
+            var borderPen = new Pen(c, 3);
+            var fillColor = new SolidBrush(Color.FromArgb(0x3F, c));
+
+            g.DrawEllipse(borderPen, center.X - relativeRadius, center.Y - relativeRadius, relativeRadius + relativeRadius, relativeRadius + relativeRadius);
+            g.FillEllipse(fillColor, center.X - relativeRadius, center.Y - relativeRadius, relativeRadius + relativeRadius, relativeRadius + relativeRadius);
+        }
+
         private static int GetZoom(int blockRadius)
         {
             if (blockRadius >= 1100)
