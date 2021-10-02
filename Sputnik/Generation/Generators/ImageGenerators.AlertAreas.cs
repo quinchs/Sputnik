@@ -23,8 +23,7 @@ namespace Sputnik.Generation
 
             foreach (var item in alerts.Where(x => x.World == "world"))
             {
-                var hash = md5.ComputeHash(Encoding.UTF8.GetBytes($"{item.Name.Reverse()}"));
-                var color = Color.FromArgb(hash[0], hash[1], hash[2]);
+                var color = Utils.GetMapColor(item.Name);
                 colorMap.Add(item.Name, color);
                 Utils.DrawCircle(graphics, color, item, background.result, item.Radius);
             }

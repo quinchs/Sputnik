@@ -2,6 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Sputnik.DataModels
         public int X { get; set; }
         public int Z { get; set; }
 
+        [BsonRepresentation(BsonType.DateTime)]
         public DateTime Time { get; set; }
 
         public string Username { get; set; }
@@ -31,5 +33,7 @@ namespace Sputnik.DataModels
             this.Username = player.Account;
             this.World = player.World;
         }
+
+        public static implicit operator Point(UserCoordinates c) => new Point(c.X, c.Z);
     }
 }

@@ -193,7 +193,6 @@ namespace Sputnik.Generation
             var fontData = Marshal.AllocCoTaskMem(font.Length);
             Marshal.Copy(font, 0, fontData, font.Length);
             privateFontCollection.AddMemoryFont(fontData, font.Length);
-            // Marshal.FreeCoTaskMem(fontData);  Nasty bug alert, read the comment
         }
 
         public static async Task DrawPlayerHead(Graphics g, Point loc, int width, int height, string username)
@@ -257,6 +256,38 @@ namespace Sputnik.Generation
                 ImageFormat = "jpg",
                 ZoomPrefix = zoomOutLevel == 0 ? "" : (ZoomPrefix(zoomOutLevel) + "_")
             };
+        }
+
+        public static Color GetMapColor(string name)
+        {
+            var hash = (name ?? "").GetHashCode();
+
+            var rnd = new Random(hash);
+
+            unchecked
+            {
+                return Color.FromArgb(rnd.Next(17) switch
+                {
+                    0  => (int)0xffffffff,
+                    1  => (int)0xffff3700,
+                    2  => (int)0xffff9900,
+                    3  => (int)0xff00eaff,
+                    4  => (int)0xffffdd00,
+                    5  => (int)0xff00ffbe,
+                    6  => (int)0xff161f1b,
+                    7  => (int)0xff831a23,
+                    8  => (int)0xff831a23,
+                    9  => (int)0xff784953,
+                    10 => (int)0xff626262,
+                    11 => (int)0xff626262,
+                    12 => (int)0xff3c3c35,
+                    13 => (int)0xff7d4882,
+                    14 => (int)0xff680bf8,
+                    15 => (int)0xff680bf8,
+                    16 => (int)0xffdade18,
+                    _ =>  (int)0xffff00ff
+                });
+            }
         }
     }
 }

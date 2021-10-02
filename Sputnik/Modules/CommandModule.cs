@@ -19,6 +19,8 @@ namespace Sputnik.Modules
         private CustomEmoteHandler _emoteHandler
             => HandlerService.GetHandlerInstance<CustomEmoteHandler>();
 
+        #region Alerts
+
         [Command("alerts add")]
         public async Task AddAlertCoords(string name, string dimention, int x, int z, int radius)
         {
@@ -135,6 +137,10 @@ namespace Sputnik.Modules
             );
         }
 
+        #endregion
+
+        #region Whitelist
+
         [Command("whitelist add")]
         public async Task AddWhitelist(string username)
         {
@@ -184,5 +190,62 @@ namespace Sputnik.Modules
 
             await ReplyAsync($"{username} has been removed from the whitelist");
         }
+
+        #endregion
+
+        #region Sat Lookup
+
+        [Command("satellite track")]
+        public async Task SatLookup(string player, string world = null)
+        {
+            if(!Program.DynmapClient.CurrentPlayers.Any(x => x.Name == player))
+            {
+                await ReplyAsync($"Cannot find player {player}!");
+                return;
+            }
+
+            await DeferAsync();
+
+            var trackResult = await ImageGenerator.GetPlayerSatelliteImageAsync(player).ConfigureAwait(false);
+
+            var fPath = $"./SatTrack/track-{player}-{trackResult.GetHashCode()}.png";
+
+            if (!Directory.Exists("./SatTracks"))
+                Directory.CreateDirectory("./SatTracks");
+
+            trackResult.Image.Save(fPath);
+
+            Dictionary<string, CustomEmote> emotes = new();
+
+            foreach (var c in trackResult.Colors)
+            {
+                var em = await _emoteHandler.CreateEmoteAsync(c.Value).ConfigureAwait(false);
+                emotes.Add(c.Key, em);
+            }
+
+            var embed = new EmbedBuilder()
+                .WithTitle($"Track results of {player}")
+                .WithColor(Color.Green)
+                .WithDescription($"Image radius: {trackResult.BlockRadius} blocks\nCenter position: X: {trackResult.Center.X} Z: {trackResult.Center.Y}")
+                .AddField("Player key", $"{string.Join("\n", emotes.Select(x => $"> <:{x.Value.ARGB}:{x.Value.Id}> - {x.Key}"))}")
+                .WithImageUrl("attachment://result.png");
+
+            if (Context.IsInteraction)
+            {
+                await Context.Interaction.FollowupWithFileAsync("", fPath, "result.png", embed: embed.Build());
+            }
+            else
+            {
+                await Context.Channel.SendFileAsync(fPath, embed: embed.Build());
+            }
+        }
+
+        [Command("satellite image")]
+        public async Task SatelliteImage(int x, int z, int radius, string world)
+        {
+
+        }
+
+        #endregion
     }
 }

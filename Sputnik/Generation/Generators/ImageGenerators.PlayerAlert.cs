@@ -40,8 +40,7 @@ namespace Sputnik.Generation
                     color = c;
                 else
                 {
-                    var n = (int)(0xF7000000 + (new Random().Next(0xFFFFFF) & 0x7F7F7F));
-                    color = Color.FromArgb(n);
+                    color = Utils.GetMapColor(un);
                     colors.Add(un, color);
                 }
 

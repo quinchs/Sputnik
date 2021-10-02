@@ -1,4 +1,5 @@
-﻿using Dynmap;
+﻿using Discord.WebSocket;
+using Dynmap;
 using Sputnik.DataModels;
 using System;
 using System.Collections.Generic;
@@ -8,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace Sputnik.Handlers
 {
-    public class PlayerLoggingHandler
+    public class PlayerLoggingHandler : DiscordHandler
     {
-        public PlayerLoggingHandler(DynmapClient client)
+        public override void Initialize(DiscordSocketClient client, DynmapClient dynmap)
         {
-            client.PlayersUpdated += Client_PlayersUpdated; 
+            dynmap.PlayersUpdated += Client_PlayersUpdated;
         }
 
         private async Task Client_PlayersUpdated(IReadOnlyCollection<Dynmap.API.Player> arg)
