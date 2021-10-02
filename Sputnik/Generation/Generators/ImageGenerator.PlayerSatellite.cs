@@ -26,7 +26,7 @@ namespace Sputnik.Generation
 
             var graphics = Graphics.FromImage(background.backgroundImage);
 
-            var rect = new Rectangle(center.X - coordinateMapResult.Radius, center.Y - coordinateMapResult.Radius, center.X + coordinateMapResult.Radius, center.Y + coordinateMapResult.Radius);
+            var rect = new Rectangle(center.X - coordinateMapResult.Radius, center.Y - coordinateMapResult.Radius, coordinateMapResult.Radius * 2, coordinateMapResult.Radius * 2);
 
             var colorMap = new Dictionary<string, Color>();
 

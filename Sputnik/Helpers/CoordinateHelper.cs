@@ -21,7 +21,7 @@ namespace Sputnik.Helpers
         public static async Task<IReadOnlyDictionary<string, IOrderedEnumerable<UserCoordinates>>> GetIntersectingPlayersAsync(string baseUser, Point p, int radius, DateTime from, DateTime to, string world)
         {
             // we will be working with a square radius instead of a circle one, the math is a bit different
-            var rect = new Rectangle(p.X - radius, p.Y - radius, p.X + radius, p.Y + radius);
+            var rect = new Rectangle(p.X - radius, p.Y - radius, radius* 2, radius * 2);
 
             var dict = new Dictionary<string, IOrderedEnumerable<UserCoordinates>>();
 
