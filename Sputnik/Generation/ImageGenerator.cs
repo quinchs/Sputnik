@@ -38,7 +38,7 @@ namespace Sputnik.Generation
 
             var bm = new Bitmap(1024, 1024);
             var grapics = Graphics.FromImage(bm);
-            var drawResult = await Utils.DrawBackgroundAsync(grapics, 1024, 1024, location, blockRadius);
+            var drawResult = await Utils.DrawBackgroundAsync(grapics, 1024, 1024, location, blockRadius).ConfigureAwait(false);
 
             if (drawResult == null)
                 return (null, null);

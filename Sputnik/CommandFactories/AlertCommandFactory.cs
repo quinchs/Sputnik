@@ -55,7 +55,28 @@ namespace Sputnik.CommandFactories
                     .AddOption("name", ApplicationCommandOptionType.String, "The name of alert to remove", true, isAutocomplete: true)
             ).Build();
 
-            return new ApplicationCommandProperties[] { alertCommand };
+            var whitelistCommand = new SlashCommandBuilder()
+                .WithName("whitelist")
+                .WithDescription("List or modify the witelist for alerts")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("add")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .WithDescription("Adds a user to the whitelist")
+                    .AddOption("username", ApplicationCommandOptionType.String, "The username of the user to add", true)
+                )
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("remove")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .WithDescription("Removes a user from the whitelist")
+                    .AddOption("username", ApplicationCommandOptionType.String, "The user to remove from the whitelist", true, isAutocomplete: true)
+                )
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("list")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .WithDescription("Lists the current users in the whitelist")
+                ).Build();
+
+            return new ApplicationCommandProperties[] { alertCommand, whitelistCommand };
         }
     }
 }

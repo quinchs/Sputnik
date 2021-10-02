@@ -19,7 +19,7 @@ namespace Sputnik.Generation
     {
         public static async Task<AlertImageResult> CreateAlertAsync(Point location, int blockRadius, List<(bool drawHead, List<UserCoordinates> positions)> offenderPositions, Dictionary<string, Color> playerColors = null)
         {
-            var background = await GetOrCreateBackgroundAsync(location, blockRadius);
+            var background = await GetOrCreateBackgroundAsync(location, blockRadius).ConfigureAwait(false);
 
             if (background.result == null)
                 return null;
@@ -80,7 +80,7 @@ namespace Sputnik.Generation
 
             if(offender.drawHead)
             {
-                await Utils.DrawPlayerHead(grapics, playerPoint, 64, 64, playerName);
+                await Utils.DrawPlayerHead(grapics, playerPoint, 64, 64, playerName).ConfigureAwait(false);
                 grapics.DrawString(playerName, new Font(_fonts.Families[0], 20, FontStyle.Regular), new SolidBrush(Color.White), playerPoint.X, playerPoint.Y + 48, new StringFormat()
                 {
                     Alignment = StringAlignment.Center,

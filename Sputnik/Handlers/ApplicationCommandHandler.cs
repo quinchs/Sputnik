@@ -27,29 +27,32 @@ namespace Sputnik.Handlers
 
         private async Task _client_SlashCommandExecuted(SocketSlashCommand arg)
         {
-            var name = arg.CommandName;
-
-            if(arg.Data.Options.Count == 1 && arg.Data.Options.First().Type == Discord.ApplicationCommandOptionType.SubCommand)
+            _ = Task.Run(async () =>
             {
-                name += " " + GetSubName(arg.Data.Options.First());
-            }
+                var name = arg.CommandName;
 
-            var context = new DualPurposeContext(_client, arg);
-            var r = await Program.CommandService.ExecuteAsync(context, name, null);
-
-            if (r.IsSuccess)
-            {
-                Logger.Write($"Command [{name}] executed <Green>Successfully</Green>", new Severity[] { Severity.CommandService, Severity.Log}, nameof(ApplicationCommandHandler));
-            }
-            else
-            {
-                Logger.Write($"<Red>Failed</Red> to execute command [{name}] - {(r.Error.HasValue ? $"{r.Error.Value}: " : "")}{r.ErrorReason}", new Severity[] { Severity.CommandService, Severity.Error}, nameof(ApplicationCommandHandler));
-            
-                if(r is ExecuteResult ex)
+                if (arg.Data.Options.Count == 1 && arg.Data.Options.First().Type == Discord.ApplicationCommandOptionType.SubCommand)
                 {
-                    Logger.Write($"[{name}]: {ex.Exception}", new Severity[] { Severity.CommandService, Severity.Error }, nameof(ApplicationCommandHandler));
+                    name += " " + GetSubName(arg.Data.Options.First());
                 }
-            }
+
+                var context = new DualPurposeContext(_client, arg);
+                var r = await Program.CommandService.ExecuteAsync(context, name, null);
+
+                if (r.IsSuccess)
+                {
+                    Logger.Write($"Command [{name}] executed <Green>Successfully</Green>", new Severity[] { Severity.CommandService, Severity.Log }, nameof(ApplicationCommandHandler));
+                }
+                else
+                {
+                    Logger.Write($"<Red>Failed</Red> to execute command [{name}] - {(r.Error.HasValue ? $"{r.Error.Value}: " : "")}{r.ErrorReason}", new Severity[] { Severity.CommandService, Severity.Error }, nameof(ApplicationCommandHandler));
+
+                    if (r is ExecuteResult ex)
+                    {
+                        Logger.Write($"[{name}]: {ex.Exception}", new Severity[] { Severity.CommandService, Severity.Error }, nameof(ApplicationCommandHandler));
+                    }
+                }
+            });
         }
 
         private string GetSubName(SocketSlashCommandDataOption opt)
