@@ -41,6 +41,12 @@ namespace Sputnik.Services
                 }));
             }
 
+            foreach(var world in client.Worlds)
+            {
+                if (!Directory.Exists(MapsDirectory + $"/{world.Name}"))
+                    Directory.CreateDirectory(MapsDirectory + $"/{world.Name}");
+            }
+
             _config = JsonConvert.DeserializeObject<MapsConfig>(File.ReadAllText(MapsConfig));
 
         }
@@ -60,14 +66,33 @@ namespace Sputnik.Services
             using (HttpClient client = new HttpClient())
             using(var fs = File.OpenWrite(fPath))
             {
-                var stream = await client.GetStreamAsync(uri).ConfigureAwait(false);
+                int retries = 0;
+                Stream stream = null;
+
+            getStream:
+
+                try
+                {
+                    stream = await client.GetStreamAsync(uri).ConfigureAwait(false);
+                }
+                catch(HttpRequestException x) when (x.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    await Task.Delay(250);
+                    retries++;
+
+                    if (retries >= 5)
+                        throw;
+
+                    goto getStream;
+                }
+
                 stream.CopyTo(fs);
                 await fs.FlushAsync().ConfigureAwait(false);
                 fs.Close();
             }
             s.Stop();
 
-            Logger.Log($"Got tile {match.Groups[1].Value}_{6 - match.Groups[2].Value.Count(x => x == 'z')}_{match.Groups[3].Value}_{match.Groups[4].Value} : {s.ElapsedMilliseconds}ms", Severity.Dynmap);
+            Logger.Write($"Got tile {match.Groups[1].Value}_{6 - match.Groups[2].Value.Count(x => x == 'z')}_{match.Groups[3].Value}_{match.Groups[4].Value} : {s.ElapsedMilliseconds}ms", new Severity[] { Severity.Dynmap, Severity.Core}, nameof(MapDownloaderService));
 
             return Image.FromFile(fPath);
         }

@@ -35,11 +35,11 @@ namespace Sputnik
         {
             var trace = new StackTrace();
 
-            var frames = trace.GetFrames().Select(x => x.GetMethod().DeclaringType);
+            var frames = trace.GetFrames().Select(x => x.GetMethod()?.DeclaringType).Where(x => x != null);
 
             var type = frames.FirstOrDefault(x => x != typeof(Logger) && AsmTypes.Contains(x) && x.IsClass);
 
-            return $"{type.ReflectedType?.Name ?? type.Name}.cs";
+            return type != null ? $"{type.ReflectedType?.Name ?? type.Name}.cs" : "Unknown.cs";
         }
 
         public static void Critical(object data, Severity? sev = null)

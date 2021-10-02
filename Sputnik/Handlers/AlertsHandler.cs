@@ -214,6 +214,8 @@ namespace Sputnik.Handlers
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
+            img.Image.Dispose();
+
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
             var imageLink = await GetImageUrl(fname, ref alert, null).ConfigureAwait(false);
@@ -250,6 +252,8 @@ namespace Sputnik.Handlers
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
 
+            img.Image.Dispose();
+            
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 
             var message = await channel.GetMessageAsync(alert.MessageId).ConfigureAwait(false) as IUserMessage;
@@ -279,6 +283,8 @@ namespace Sputnik.Handlers
             var fname = Path.GetFullPath(ActiveAlertsDir + $"/alert-{alert.GetHashCode()}.png");
 
             img.Image.Save(fname, System.Drawing.Imaging.ImageFormat.Png);
+
+            img.Image.Dispose();
 
             var channel = _discordClient.GetGuild(892543998495977493).GetTextChannel(ConfigService.Config.AlertsChannelId);
 

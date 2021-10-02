@@ -86,12 +86,12 @@ namespace Sputnik.Generation
         }
     }
 
-    public struct PlayerSatelliteResult
+    public struct PlayerSatelliteResult : IDisposable
     {
         public Image Image { get; }
         public int BlockRadius { get; }
         public Point Center { get; }
-        public IReadOnlyDictionary<string, Color> Colors { get; }
+        public IReadOnlyDictionary<string, Color> Colors { get; private set; }
 
         public PlayerSatelliteResult(Image m, int b, Point c, Dictionary<string, Color> clr)
         {
@@ -99,6 +99,12 @@ namespace Sputnik.Generation
             this.BlockRadius = b;
             this.Center = c;
             this.Colors = clr;
+        }
+
+        public void Dispose()
+        {
+            Image.Dispose();
+            Colors = null;
         }
     }
 }

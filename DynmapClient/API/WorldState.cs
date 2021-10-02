@@ -25,7 +25,7 @@
         public int Confighash { get; set; }
 
         [JsonProperty("servertime")]
-        public int Servertime { get; set; }
+        public long Servertime { get; set; }
 
         [JsonProperty("updates")]
         public List<Update> Updates { get; set; }
@@ -82,13 +82,13 @@
         public string Msg { get; set; }
 
         [JsonProperty("x", NullValueHandling = NullValueHandling.Ignore)]
-        public int? X { get; set; }
+        public double? X { get; set; }
 
         [JsonProperty("y", NullValueHandling = NullValueHandling.Ignore)]
-        public int? Y { get; set; }
+        public double? Y { get; set; }
 
         [JsonProperty("z", NullValueHandling = NullValueHandling.Ignore)]
-        public int? Z { get; set; }
+        public double? Z { get; set; }
 
         [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
         public string Id { get; set; }
@@ -112,10 +112,10 @@
         public string Dim { get; set; }
 
         [JsonProperty("minzoom", NullValueHandling = NullValueHandling.Ignore)]
-        public int? Minzoom { get; set; }
+        public double? Minzoom { get; set; }
 
         [JsonProperty("maxzoom", NullValueHandling = NullValueHandling.Ignore)]
-        public int? Maxzoom { get; set; }
+        public double? Maxzoom { get; set; }
 
         [JsonProperty("ctype", NullValueHandling = NullValueHandling.Ignore)]
         public string Ctype { get; set; }

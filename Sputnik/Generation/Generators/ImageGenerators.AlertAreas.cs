@@ -33,7 +33,7 @@ namespace Sputnik.Generation
         }
     }
 
-    public struct AreaMapResult
+    public struct AreaMapResult : IDisposable
     {
         public IReadOnlyDictionary<string, Color> Colors { get; }
 
@@ -43,6 +43,11 @@ namespace Sputnik.Generation
         {
             Image = i;
             Colors = c;
+        }
+
+        public void Dispose()
+        {
+            Image.Dispose();
         }
     }
 }

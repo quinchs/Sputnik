@@ -66,7 +66,7 @@ namespace Sputnik.Modules
 
             var border = markers.Sets.Markers.Areas.First().Value;
 
-            var alertImage = await ImageGenerator.CreateAlertAreaMapAsync(alerts, Math.Abs((int)border.X[0] - (int)border.X[1]));
+            using var alertImage = await ImageGenerator.CreateAlertAreaMapAsync(alerts, Math.Abs((int)border.X[0] - (int)border.X[1]));
 
             Dictionary<string, CustomEmote> emotes = new();
 
@@ -209,7 +209,7 @@ namespace Sputnik.Modules
 
             await DeferAsync();
 
-            var trackResult = await ImageGenerator.GetPlayerSatelliteImageAsync(target, world).ConfigureAwait(false);
+            using var trackResult = await ImageGenerator.GetPlayerSatelliteImageAsync(target, world).ConfigureAwait(false);
 
             if(trackResult.Image == null)
             {
@@ -261,6 +261,8 @@ namespace Sputnik.Modules
             await DeferAsync();
             
             var result = await ImageGenerator.GetBackgroundAsync(x, z, radius, world);
+
+            result.Image.Dispose();
 
             var embed = new EmbedBuilder()
                 .WithTitle("Image result")

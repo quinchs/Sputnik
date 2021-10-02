@@ -1,6 +1,7 @@
 ﻿using Sputnik.Generation.Models;
 using Sputnik.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Text;
@@ -9,6 +10,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -81,7 +83,10 @@ namespace Sputnik.Generation
             var xOffset = -(int)Map(Math.Abs(minecraftCoordsCenter.X % blockToZoom), 0, blockToZoom, minecraftCoordsCenter.X >= 0 ? 0 : tileSize, minecraftCoordsCenter.X >= 0 ? tileSize : 0);
             var yOffset = -(int)Map(Math.Abs(minecraftCoordsCenter.Y % blockToZoom), 0, blockToZoom, minecraftCoordsCenter.Y >= 0 ? 0 : tileSize, minecraftCoordsCenter.Y >= 0 ? tileSize : 0);
 
-            List<Task<ImageDetails>> work = new();
+            SemaphoreSlim maxThread = new SemaphoreSlim(12);
+            ConcurrentBag<ImageDetails> results = new ConcurrentBag<ImageDetails>();
+            ConcurrentBag<Task> waitTasks = new();
+
             for (int y = 0; y != yTileCount; y++)
             {
                 for (int x = 0; x != xTileCount; x++)
@@ -89,16 +94,31 @@ namespace Sputnik.Generation
                     var tile = Tiles[x, y];
                     var url = GetTileUrl(world, tile, zoomFactor);
 
-                    work.Add(GetImageDetailsAsync(url, x, y, (int)tileSize, xOffset, yOffset));
+                    var xCpy = x;
+                    var yCpy = y;
+
+                    var tcs = new TaskCompletionSource();
+                    waitTasks.Add(tcs.Task);
+                    async Task getImage()
+                    {
+                        await maxThread.WaitAsync().ConfigureAwait(false);
+                        var details = await GetImageDetailsAsync(url, xCpy, yCpy, (int)tileSize, xOffset, yOffset).ConfigureAwait(false);
+                        results.Add(details);
+                        await Task.Delay(100).ConfigureAwait(false);
+                        maxThread.Release();
+                        tcs.SetResult();
+                    };
+
+                    _ = Task.Factory.StartNew(getImage, TaskCreationOptions.LongRunning);
                 }
             }
 
-            await Task.WhenAll(work).ConfigureAwait(false);
+            await Task.WhenAll(waitTasks);
 
-            foreach(var task in work)
+            foreach (var d in results)
             {
-                var d = await task.ConfigureAwait(false);
                 g.DrawImage(d.Image, d.X, d.Y, d.Width, d.Height);
+                d.Image.Dispose();
             }
 
             var centerX = width / 2;
