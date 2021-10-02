@@ -21,7 +21,7 @@ namespace Dynmap
         public IReadOnlyDictionary<string, WorldState> CurrentWorldStates
             => _worldStates;
         public IReadOnlyCollection<Player> CurrentPlayers
-            => CurrentWorldStates.SelectMany(x => x.Value.Players).ToImmutableArray();
+            => CurrentWorldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First()).ToImmutableArray();
 
         public readonly RestClient Rest;
 
@@ -81,7 +81,7 @@ namespace Dynmap
                 });
 
                 var oldPlayersState = oldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First());
-                var newPlayersState = worldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First()); ;
+                var newPlayersState = worldStates.SelectMany(x => x.Value.Players).GroupBy(x => x.Account).Select(x => x.First());
 
                 var newPlayers = newPlayersState.Where(x => !oldPlayersState.Any(y => y.Name != x.Name));
                 var oldPlayers = oldPlayersState.Where(x => !newPlayersState.Any(y => y.Name != x.Name));

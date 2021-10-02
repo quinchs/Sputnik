@@ -55,14 +55,6 @@ namespace Sputnik
 
             var mapService = new MapDownloaderService(DynmapClient);
 
-            var image = new Bitmap(2048, 2048);
-
-            var graphics = Graphics.FromImage(image);
-
-            await Generation.Utils.DrawBackgroundAsync(graphics, 2048, 2048, new Point(0, 0), 3100);
-
-            image.Save("test.png", System.Drawing.Imaging.ImageFormat.Png);
-
             await Task.Delay(-1);
         }
 

@@ -10,7 +10,7 @@ namespace Sputnik.DataModels
     [BsonIgnoreExtraElements]
     public class CustomEmote
     {
-        public ulong Id { get; set; }
+        public ulong EmoteId { get; set; }
         public int ARGB { get; set; }
     }
 }

@@ -18,7 +18,7 @@ namespace Sputnik.Helpers
             return data.ToList().OrderByDescending(x => x.Time.Ticks);
         }
 
-        public static async Task<IReadOnlyDictionary<string, IOrderedEnumerable<UserCoordinates>>> GetIntersectingPlayersAsync(Point p, int radius, DateTime from, DateTime to, string world)
+        public static async Task<IReadOnlyDictionary<string, IOrderedEnumerable<UserCoordinates>>> GetIntersectingPlayersAsync(string baseUser, Point p, int radius, DateTime from, DateTime to, string world)
         {
             // we will be working with a square radius instead of a circle one, the math is a bit different
             var rect = new Rectangle(p.X - radius, p.Y - radius, p.X + radius, p.Y + radius);
@@ -26,10 +26,10 @@ namespace Sputnik.Helpers
             var dict = new Dictionary<string, IOrderedEnumerable<UserCoordinates>>();
 
             var intersecting = (await MongoService.UserCoordinatesCollection.FindAsync(x =>
+                x.Username != baseUser && 
                 x.World == world &&
-                x.Time >= from && x.Time <= to &&
-                MathUtils.IsInsideOf(new Point(x.X, x.Z), rect) 
-            ).ConfigureAwait(false)).ToList();
+                x.Time >= from && x.Time <= to
+            ).ConfigureAwait(false)).ToList().Where(x => MathUtils.IsInsideOf(new Point(x.X, x.Z), rect));
 
             var result = intersecting.GroupBy(x => x.Username);
 

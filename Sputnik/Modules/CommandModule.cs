@@ -72,7 +72,7 @@ namespace Sputnik.Modules
 
             foreach(var c in alertImage.Colors)
             {
-                var em = await _emoteHandler.CreateEmoteAsync(c.Value).ConfigureAwait(false);
+                var em = await _emoteHandler.GetOrCreateEmoteAsync(c.Value).ConfigureAwait(false);
                 emotes.Add(c.Key, em);
             }
 
@@ -85,7 +85,7 @@ namespace Sputnik.Modules
 
             var link = await HapsyService.GetImageLinkAsync(fname).ConfigureAwait(false);
 
-            var alertFields = alerts.Take(25).Select(x => new EmbedFieldBuilder().WithName($"{x.Name}").WithValue($"Color: <:{emotes[x.Name].ARGB:X}:{emotes[x.Name].Id}>\nX: {x.X}\nY: {x.Z}\nR: {x.Radius}\nOwner: <@{x.Owner}>"));
+            var alertFields = alerts.Take(25).Select(x => new EmbedFieldBuilder().WithName($"{x.Name}").WithValue($"Color: <:{emotes[x.Name].ARGB:X}:{emotes[x.Name].EmoteId}>\nX: {x.X}\nY: {x.Z}\nR: {x.Radius}\nOwner: <@{x.Owner}>"));
 
             var embed = new EmbedBuilder()
                 .WithTitle("Alerts")
@@ -196,19 +196,28 @@ namespace Sputnik.Modules
         #region Sat Lookup
 
         [Command("satellite track")]
-        public async Task SatLookup(string player, string world = null)
+        public async Task SatLookup(string target, string world = null)
         {
-            if(!Program.DynmapClient.CurrentPlayers.Any(x => x.Name == player))
+            if (world == "")
+                world = null;
+
+            if(!Program.DynmapClient.CurrentPlayers.Any(x => x.Name == target))
             {
-                await ReplyAsync($"Cannot find player {player}!");
+                await ReplyAsync($"Cannot find player {target}!");
                 return;
             }
 
             await DeferAsync();
 
-            var trackResult = await ImageGenerator.GetPlayerSatelliteImageAsync(player).ConfigureAwait(false);
+            var trackResult = await ImageGenerator.GetPlayerSatelliteImageAsync(target, world).ConfigureAwait(false);
 
-            var fPath = $"./SatTrack/track-{player}-{trackResult.GetHashCode()}.png";
+            if(trackResult.Image == null)
+            {
+                await ReplyAsync($"Cannot track {target}.");
+                return;
+            }
+
+            var fPath = $"./SatTracks/track-{target}-{trackResult.GetHashCode()}.png";
 
             if (!Directory.Exists("./SatTracks"))
                 Directory.CreateDirectory("./SatTracks");
@@ -219,15 +228,15 @@ namespace Sputnik.Modules
 
             foreach (var c in trackResult.Colors)
             {
-                var em = await _emoteHandler.CreateEmoteAsync(c.Value).ConfigureAwait(false);
+                var em = await _emoteHandler.GetOrCreateEmoteAsync(c.Value).ConfigureAwait(false);
                 emotes.Add(c.Key, em);
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle($"Track results of {player}")
+                .WithTitle($"Track results of {target}")
                 .WithColor(Color.Green)
-                .WithDescription($"Image radius: {trackResult.BlockRadius} blocks\nCenter position: X: {trackResult.Center.X} Z: {trackResult.Center.Y}")
-                .AddField("Player key", $"{string.Join("\n", emotes.Select(x => $"> <:{x.Value.ARGB}:{x.Value.Id}> - {x.Key}"))}")
+                .WithDescription($"Image radius: {trackResult.BlockRadius} blocks\nCenter position: X: {trackResult.Center.X} Z: {trackResult.Center.Y}\nTrack duration: 2 minutes")
+                .AddField("Player key", $"{string.Join("\n", emotes.Select(x => $"> <:{x.Value.ARGB:X}:{x.Value.EmoteId}> - {x.Key}"))}")
                 .WithImageUrl("attachment://result.png");
 
             if (Context.IsInteraction)
@@ -241,9 +250,34 @@ namespace Sputnik.Modules
         }
 
         [Command("satellite image")]
-        public async Task SatelliteImage(int x, int z, int radius, string world)
+        public async Task SatelliteImage(int x, int z, int radius, string world = "world")
         {
+            if(!Program.DynmapClient.Worlds.Any(x => x.Name == world))
+            {
+                await ReplyAsync($"World \"{world}\" not found!", ephemeral: true);
+                return;
+            }
 
+            await DeferAsync();
+            
+            var result = await ImageGenerator.GetBackgroundAsync(x, z, radius, world);
+
+            var embed = new EmbedBuilder()
+                .WithTitle("Image result")
+                .WithColor(Color.Green)
+                .WithDescription($"Heres the map at X: {x} Z: {z} in the world \"{world}\"")
+                .WithImageUrl("attachment://result.png");
+
+            if (Context.IsInteraction)
+            {
+                await Context.Interaction.FollowupWithFileAsync("", $"./BackgroundsCache/{world}_{x}_{z}_{radius}.png", "result.png", embed: embed.Build());
+            }
+            else
+            {
+                await Context.Channel.SendFileAsync($"./BackgroundsCache/{world}_{x}_{z}_{radius}.png", embed: embed.Build());
+            }
+
+            result.Image.Dispose();
         }
 
         #endregion

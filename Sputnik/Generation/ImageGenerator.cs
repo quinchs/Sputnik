@@ -24,9 +24,12 @@ namespace Sputnik.Generation
             Utils.AddFontFromResource(_fonts, Properties.Resources.minecraft_font_otf);
         }
 
-        private static async Task<(BackgroundResult result, Image backgroundImage)> GetOrCreateBackgroundAsync(Point location, int blockRadius)
+        public static Task<(BackgroundResult Result, Image Image)> GetBackgroundAsync(int x, int z, int radius, string world = "world")
+            => GetOrCreateBackgroundAsync(new Point(x, z), radius, world);
+
+        private static async Task<(BackgroundResult result, Image backgroundImage)> GetOrCreateBackgroundAsync(Point location, int blockRadius, string world = "world")
         {
-            var fPath = BackgroundCacheLocation + $"/{location.X}_{location.Y}_{blockRadius}";
+            var fPath = BackgroundCacheLocation + $"/{world}_{location.X}_{location.Y}_{blockRadius}";
 
             if (File.Exists(fPath + ".json"))
             {
@@ -38,7 +41,7 @@ namespace Sputnik.Generation
 
             var bm = new Bitmap(1024, 1024);
             var grapics = Graphics.FromImage(bm);
-            var drawResult = await Utils.DrawBackgroundAsync(grapics, 1024, 1024, location, blockRadius).ConfigureAwait(false);
+            var drawResult = await Utils.DrawBackgroundAsync(grapics, 1024, 1024, location, blockRadius, world).ConfigureAwait(false);
 
             if (drawResult == null)
                 return (null, null);

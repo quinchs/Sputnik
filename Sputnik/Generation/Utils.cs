@@ -35,7 +35,7 @@ namespace Sputnik.Generation
                 );
         }
 
-        public static async Task<BackgroundResult> DrawBackgroundAsync(Graphics g, int width, int height, Point minecraftCoordsCenter, int blockRadius)
+        public static async Task<BackgroundResult> DrawBackgroundAsync(Graphics g, int width, int height, Point minecraftCoordsCenter, int blockRadius, string world = "world")
         {
             if (width != height)
                 return null;
@@ -87,7 +87,7 @@ namespace Sputnik.Generation
                 for (int x = 0; x != xTileCount; x++)
                 {
                     var tile = Tiles[x, y];
-                    var url = GetTileUrl("world", tile, zoomFactor);
+                    var url = GetTileUrl(world, tile, zoomFactor);
 
                     work.Add(GetImageDetailsAsync(url, x, y, (int)tileSize, xOffset, yOffset));
                 }

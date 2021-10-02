@@ -13,9 +13,11 @@ namespace Sputnik.Handlers
     public class CommandAutocompleteHandler : DiscordHandler
     {
         private DiscordSocketClient _client;
+        private DynmapClient _dynmapClient;
         public override void Initialize(DiscordSocketClient client, DynmapClient dynmap)
         {
             _client = client;
+            _dynmapClient = dynmap;
 
             client.InteractionCreated += Client_InteractionCreated;
         }
@@ -64,6 +66,36 @@ namespace Sputnik.Handlers
                                     s.Start();
 
                                     var names = MongoService.Whitelist.Find(x => true).FirstOrDefault()?.Usernames ?? new List<string>();
+
+                                    if (string.IsNullOrEmpty(auto.Data.Current.Value?.ToString()))
+                                    {
+                                        await auto.RespondAsync(names.Select(x => new Discord.AutocompleteResult(x, x)).Take(20));
+                                    }
+                                    else
+                                    {
+                                        var orderedNames = names.OrderByDescending(x => Compute(x, (string)auto.Data.Current.Value));
+
+                                        await auto.RespondAsync(orderedNames.Select(x => new Discord.AutocompleteResult(x, x)).Take(20));
+                                    }
+
+                                    s.Stop();
+
+                                    Logger.Debug($"Autocomplete executed in {s.ElapsedMilliseconds}ms", Severity.Socket);
+                                }
+                                break;
+                        }
+                    }
+                    break;
+                case "satellite":
+                    {
+                        switch (auto.Data.Current?.Name)
+                        {
+                            case "target":
+                                {
+                                    Stopwatch s = new Stopwatch();
+                                    s.Start();
+
+                                    var names = _dynmapClient.CurrentPlayers.Select(x => x.Account);
 
                                     if (string.IsNullOrEmpty(auto.Data.Current.Value?.ToString()))
                                     {

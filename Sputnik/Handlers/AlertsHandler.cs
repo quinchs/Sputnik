@@ -224,7 +224,7 @@ namespace Sputnik.Handlers
                     .WithTitle("Alert triggered")
                     .WithDescription($"Alert area {alert.AlertArea.Name} has been triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
                     .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                    .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                    .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.EmoteId}> - {x.Key}")))
                     .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
                     .WithImageUrl(imageLink)
                     .Build(),
@@ -261,7 +261,7 @@ namespace Sputnik.Handlers
                 .WithTitle("Alert triggered")
                 .WithDescription($"Alert area {alert.AlertArea.Name} has been triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
                 .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.EmoteId}> - {x.Key}")))
                 .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered at {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}{(x.Value.DateLeft.HasValue ? $"\n> Date left: {TimestampTag.FromDateTime(x.Value.DateLeft.Value, TimestampTagStyles.Relative)}" : "")}")))
                 .WithImageUrl(imageLink)
                 .Build()).ConfigureAwait(false);
@@ -293,7 +293,7 @@ namespace Sputnik.Handlers
                     .WithTitle("Alert cleared")
                     .WithDescription($"{(closedBy.HasValue ? $"Closed by <@{closedBy.Value}>\n" : "")}Alert area {alert.AlertArea.Name} was triggered by {alert.Positions.Count} player{(alert.Positions.Count > 1 ? "s" : "")}!")
                     .AddField("Area Details", $"X: {alert.AlertArea.X}\nZ: {alert.AlertArea.Z}\nR: {alert.AlertArea.Radius}\nOwner: <@{alert.AlertArea.Owner}>\nWorld: {alert.AlertArea.World}")
-                    .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.Id}> - {x.Key}")))
+                    .AddField("Colors", string.Join("\n", map.Select(x => $"<:{x.Value.ARGB:X}:{x.Value.EmoteId}> - {x.Key}")))
                     .AddField("Players", string.Join("\n\n", alert.Positions.Select(x => $"**{x.Key}**:\n> X: {x.Value.Positions.Last().X}\n> Z: {x.Value.Positions.Last().Z}\n> Entered {TimestampTag.FromDateTime(x.Value.DateEntered, TimestampTagStyles.Relative)}\n> Left: {TimestampTag.FromDateTime(x.Value.DateLeft.GetValueOrDefault(DateTime.UtcNow), TimestampTagStyles.Relative)}")))
                     .WithImageUrl(imageLink)
                     .Build();
@@ -329,14 +329,14 @@ namespace Sputnik.Handlers
 
                 foreach(var emote in emotes)
                 {
-                    var m = guild.Emotes.FirstOrDefault(x => x.Id == emote.Id);
+                    var m = guild.Emotes.FirstOrDefault(x => x.Id == emote.EmoteId);
                     
                     if(m != null)
                     {
                         await guild.DeleteEmoteAsync(m).ConfigureAwait(false);
                     }
 
-                    await MongoService.CustomEmotes.DeleteOneAsync(x => x.Id == emote.Id).ConfigureAwait(false);
+                    await MongoService.CustomEmotes.DeleteOneAsync(x => x.EmoteId == emote.EmoteId).ConfigureAwait(false);
                 }
             });
         }
@@ -371,7 +371,7 @@ namespace Sputnik.Handlers
                 {
                     if(pos.Value.Color != 0 && !MongoService.CustomEmotes.Find(x => x.ARGB == pos.Value.Color).Any())
                     {
-                        await handler.CreateEmoteAsync(System.Drawing.Color.FromArgb(pos.Value.Color)).ConfigureAwait(false);
+                        await handler.GetOrCreateEmoteAsync(System.Drawing.Color.FromArgb(pos.Value.Color)).ConfigureAwait(false);
                     }
                 }
             }

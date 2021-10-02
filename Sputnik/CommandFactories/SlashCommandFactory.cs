@@ -76,7 +76,44 @@ namespace Sputnik.CommandFactories
                     .WithDescription("Lists the current users in the whitelist")
                 ).Build();
 
-            return new ApplicationCommandProperties[] { alertCommand, whitelistCommand };
+            var trackCommand = new SlashCommandBuilder()
+                .WithName("satellite")
+                .WithDescription("Execute tasks as the satellite")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("track")
+                    .WithDescription("Tracks a given user")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption("target", ApplicationCommandOptionType.String, "The user to track", true, isAutocomplete: true)
+                    .AddOption("world", ApplicationCommandOptionType.String, "The world to track the user in, defaults to their current world", false, choices: new ApplicationCommandOptionChoiceProperties[]
+                    {
+                        new ApplicationCommandOptionChoiceProperties()
+                        {
+                            Name = "overworld",
+                            Value = "world"
+                        },
+                        new ApplicationCommandOptionChoiceProperties()
+                        {
+                            Name = "nether",
+                            Value = "world_nether"
+                        },
+                        new ApplicationCommandOptionChoiceProperties()
+                        {
+                            Name = "end",
+                            Value = "world_the_end"
+                        }
+                    })
+                )
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("image")
+                    .WithDescription("Images a certian part of the map")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption("x", ApplicationCommandOptionType.Integer, "The X coordinate to image", true)
+                    .AddOption("z", ApplicationCommandOptionType.Integer, "The Z coordinate to image", true)
+                    .AddOption("radius", ApplicationCommandOptionType.Integer, "The radius (in blocks) of the image to take", true)
+                    .AddOption("world", ApplicationCommandOptionType.String, "The world to take the image of, defaults to the overworld", false)
+                ).Build();
+
+            return new ApplicationCommandProperties[] { alertCommand, whitelistCommand, trackCommand };
         }
     }
 }
