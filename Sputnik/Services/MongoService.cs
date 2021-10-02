@@ -30,5 +30,6 @@ namespace Sputnik
 
         public static IMongoCollection<CustomEmote> CustomEmotes
             => Database.GetCollection<CustomEmote>("custom-emotes");
+
     }
 }

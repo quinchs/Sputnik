@@ -134,5 +134,55 @@ namespace Sputnik.Modules
                 .Build()
             );
         }
+
+        [Command("whitelist add")]
+        public async Task AddWhitelist(string username)
+        {
+            var whitelist = MongoService.Whitelist.Find(x => true).FirstOrDefault() ?? new Whitelist() { Usernames = new List<string>() };
+
+            if (whitelist.Usernames.Contains(username))
+            {
+                await ReplyAsync($"{username} is already whitelisted!", ephemeral: true);
+            }
+            else
+            {
+                whitelist.Usernames.Add(username);
+
+                await MongoService.Whitelist.ReplaceOneAsync(x => x.Id == whitelist.Id, whitelist, new ReplaceOptions() { IsUpsert = true });
+
+                await ReplyAsync($"{username} has been added to the whitelist!");
+            }
+        }
+
+        [Command("whitelist list")]
+        public async Task WhitelistList()
+        {
+            var whitelist = MongoService.Whitelist.Find(x => true).FirstOrDefault() ?? new Whitelist() { Usernames = new List<string>() };
+
+            await ReplyAsync(embed: new EmbedBuilder()
+                .WithColor(Color.Green)
+                .WithTitle("Whitelist")
+                .WithDescription(whitelist.Usernames.Count == 0 ? "There are no current users whitelisted" : $"Current whitelisted users:\n{string.Join("\n", whitelist.Usernames.Select(x => $"> {x}"))}")
+                .Build()
+            );
+        }
+
+        [Command("whitelist remove")]
+        public async Task WhitelistRemove(string username)
+        {
+            var whitelist = MongoService.Whitelist.Find(x => true).FirstOrDefault() ?? new Whitelist() { Usernames = new List<string>() };
+
+            if(!whitelist.Usernames.Contains(username))
+            {
+                await ReplyAsync($"{username} is not on the whitelist", ephemeral: true);
+                return;
+            }
+
+            whitelist.Usernames.Remove(username);
+
+            await MongoService.Whitelist.ReplaceOneAsync(x => x.Id == whitelist.Id, whitelist, new ReplaceOptions() { IsUpsert = true });
+
+            await ReplyAsync($"{username} has been removed from the whitelist");
+        }
     }
 }

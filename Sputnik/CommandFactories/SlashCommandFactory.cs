@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Sputnik.CommandFactories
 {
-    public class AlertCommandFactory : ApplicationCommandFactory
+    public class SlashCommandFactory : ApplicationCommandFactory
     {
         [GuildSpecificCommand(892543998495977493)]
         public override IEnumerable<ApplicationCommandProperties> BuildCommands()

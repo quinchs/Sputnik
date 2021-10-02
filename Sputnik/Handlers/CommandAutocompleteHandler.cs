@@ -54,6 +54,36 @@ namespace Sputnik.Handlers
                         }
                     }
                     break;
+                case "whitelist":
+                    {
+                        switch (auto.Data.Current?.Name)
+                        {
+                            case "username":
+                                {
+                                    Stopwatch s = new Stopwatch();
+                                    s.Start();
+
+                                    var names = MongoService.Whitelist.Find(x => true).FirstOrDefault()?.Usernames ?? new List<string>();
+
+                                    if (string.IsNullOrEmpty(auto.Data.Current.Value?.ToString()))
+                                    {
+                                        await auto.RespondAsync(names.Select(x => new Discord.AutocompleteResult(x, x)).Take(20));
+                                    }
+                                    else
+                                    {
+                                        var orderedNames = names.OrderByDescending(x => Compute(x, (string)auto.Data.Current.Value));
+
+                                        await auto.RespondAsync(orderedNames.Select(x => new Discord.AutocompleteResult(x, x)).Take(20));
+                                    }
+
+                                    s.Stop();
+
+                                    Logger.Debug($"Autocomplete executed in {s.ElapsedMilliseconds}ms", Severity.Socket);
+                                }
+                                break;
+                        }
+                    }
+                    break;
             }
         }
 
