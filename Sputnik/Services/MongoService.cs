@@ -31,5 +31,8 @@ namespace Sputnik
         public static IMongoCollection<CustomEmote> CustomEmotes
             => Database.GetCollection<CustomEmote>("custom-emotes");
 
+        public static IMongoCollection<ChatMessage> ChatMessages
+            => Database.GetCollection<ChatMessage>("chat-messages");
+
     }
 }

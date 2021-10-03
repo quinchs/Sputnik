@@ -31,7 +31,7 @@
         public List<Update> Updates { get; set; }
 
         [JsonProperty("timestamp")]
-        public long Timestamp { get; set; }
+        public ulong Timestamp { get; set; }
     }
 
     public partial class Player
@@ -71,57 +71,74 @@
     {
         [JsonProperty("type")]
         public TypeEnum Type { get; set; }
-
-        [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("name")]
         public string Name { get; set; }
-
+        [JsonProperty("account")]
+        public string Account { get; set; }
+        [JsonProperty("message")]
+        public string Message { get; set; }
+        [JsonProperty("channel")]
+        public string Channel { get; set; }
+        [JsonProperty("playerName")]
+        public string PlayerName { get; set; }
+        [JsonProperty("source")]
+        public string Source { get; set; }
         [JsonProperty("timestamp")]
-        public long Timestamp { get; set; }
+        public ulong Timestamp { get; set; }
 
-        [JsonProperty("msg", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("msg")]
         public string Msg { get; set; }
 
-        [JsonProperty("x", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("x")]
         public double? X { get; set; }
 
-        [JsonProperty("y", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("y")]
         public double? Y { get; set; }
 
-        [JsonProperty("z", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("z")]
         public double? Z { get; set; }
 
-        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("id")]
         public string Id { get; set; }
 
-        [JsonProperty("label", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("label")]
         public string Label { get; set; }
 
-        [JsonProperty("icon", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("icon")]
         public string Icon { get; set; }
 
-        [JsonProperty("set", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("set")]
         public string Set { get; set; }
 
-        [JsonProperty("markup", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("markup")]
         public bool? Markup { get; set; }
 
         [JsonProperty("desc")]
         public object Desc { get; set; }
 
-        [JsonProperty("dim", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("dim")]
         public string Dim { get; set; }
 
-        [JsonProperty("minzoom", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("minzoom")]
         public double? Minzoom { get; set; }
 
-        [JsonProperty("maxzoom", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("maxzoom")]
         public double? Maxzoom { get; set; }
 
-        [JsonProperty("ctype", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("ctype")]
         public string Ctype { get; set; }
     }
 
-    public enum TypeEnum { Component, Tile };
+    public enum TypeEnum 
+    { 
+        Component,
+        Tile, 
+        DayNight,
+        PlayerJoin,
+        PlayerQuit,
+        Chat,
+        Unknown 
+    };
 
     internal static class Converter
     {
@@ -151,6 +168,16 @@
                     return TypeEnum.Component;
                 case "tile":
                     return TypeEnum.Tile;
+                case "daynight":
+                    return TypeEnum.DayNight;
+                case "playerjoin":
+                    return TypeEnum.PlayerJoin;
+                case "playerquit":
+                    return TypeEnum.PlayerQuit;
+                case "chat":
+                    return TypeEnum.Chat;
+                default: 
+                    return TypeEnum.Unknown;
             }
             throw new Exception("Cannot unmarshal type TypeEnum");
         }

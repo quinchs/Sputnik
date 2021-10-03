@@ -33,11 +33,9 @@ namespace Dynmap
             return SendAsync<Configuration>("up/configuration", "GET");
         }
 
-        public Task<WorldState> GetWorldStateAsync(string world = "world", DateTimeOffset? dateTimeOffset = null)
+        public Task<WorldState> GetWorldStateAsync(string world = "world", ulong? timestamp = null)
         {
-            dateTimeOffset ??= DateTime.UtcNow;
-
-            return SendAsync<WorldState>($"up/world/{world}/{dateTimeOffset.Value.ToJavaDateTime()}", "GET");
+            return SendAsync<WorldState>($"up/world/{world}/{timestamp ?? 0}", "GET");
         }
 
         public Task<Markers> GetMarkersAsync(string world = "world")
