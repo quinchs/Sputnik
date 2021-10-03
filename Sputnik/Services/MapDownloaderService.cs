@@ -1,6 +1,7 @@
 ﻿using Dynmap;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sputnik.Services
@@ -20,8 +22,11 @@ namespace Sputnik.Services
         public const string PlayerheadDir = "./PlayerHeads";
         private readonly DynmapClient _client;
         private MapsConfig _config;
+        private ConcurrentQueue<string> _downloadedTiles = new ConcurrentQueue<string>();
 
         private static readonly Regex _urlRegex = new Regex(@"\/tiles\/(.*?)\/flat.*?\/(z{0,6})(?>_|)(-\d*?|\d*?)_(-\d*?|\d*?)\.");
+
+        private static readonly Regex _tileRegex = new Regex(@"flat.*?\/(z{0,6})(?>_|)(-\d*?|\d*?)_(-\d*?|\d*?)\.");
 
         public MapDownloaderService(DynmapClient client)
         {
@@ -49,6 +54,60 @@ namespace Sputnik.Services
 
             _config = JsonConvert.DeserializeObject<MapsConfig>(File.ReadAllText(MapsConfig));
 
+            _client.WorldStateUpdated += _client_WorldStateUpdated;
+        }
+
+        private async Task _client_WorldStateUpdated(IReadOnlyDictionary<string, Dynmap.API.WorldState> arg1, IReadOnlyDictionary<string, Dynmap.API.WorldState> arg2)
+        {
+            SemaphoreSlim maxThread = new SemaphoreSlim(6);
+            ConcurrentBag<(Image image, string path)> results = new ConcurrentBag<(Image image, string path)>();
+            ConcurrentBag<Task> waitTasks = new();
+
+            foreach (var world in arg2)
+            {
+                foreach (var tileUpdate in world.Value.Updates.Where(x => x.Type == Dynmap.API.TypeEnum.Tile))
+                {
+                    var match = _tileRegex.Match(tileUpdate.Name);
+
+                    if (!match.Success)
+                        continue;
+
+                    var fPath = $"{MapsDirectory}/{match.Groups[1].Value}/{6 - match.Groups[2].Value.Count(x => x == 'z')}_{match.Groups[3].Value}_{match.Groups[4].Value}.png";
+
+                    var tcs = new TaskCompletionSource();
+                    waitTasks.Add(tcs.Task);
+                    var tileName = $"tiles/{world.Key}/{tileUpdate.Name}";
+                    var url = ConfigService.Config.DynmapUri + tileName;
+                    async Task getImage()
+                    {
+                        await maxThread.WaitAsync().ConfigureAwait(false);
+
+                        Image img = null;
+
+                        using (HttpClient c = new HttpClient())
+                        {
+                            var s = await c.GetStreamAsync(url).ConfigureAwait(false);
+                            img = Image.FromStream(s);
+                        }
+
+                        Logger.Write($"Downloaded update tile {tileName}", new Severity[] { Severity.Dynmap, Severity.Log }, nameof(MapDownloaderService));
+
+                        results.Add((img, fPath));
+                        maxThread.Release();
+                        tcs.SetResult();
+                    };
+
+                    _ = Task.Factory.StartNew(getImage, TaskCreationOptions.LongRunning);
+                }
+            }
+
+            await Task.WhenAll(waitTasks);
+
+            foreach (var d in results)
+            {
+                d.image.Save(d.path);
+                d.image.Dispose();
+            }
         }
 
         public static async Task<Image> GetTileAsync(string uri)
