@@ -29,6 +29,9 @@ namespace Sputnik.Services
 
         [ConfigSummary("The token to authenticate with to the hapsy api.")]
         public string HapsyToken { get; set; } = "HAPSY_TOKEN_HERE";
+
+        [ConfigSummary("The message id of the status card.")]
+        public ulong? StatusCardId { get; set; } = null;
     }
 
     /// <summary>

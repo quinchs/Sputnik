@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using MongoDB.Driver;
 using Sputnik.DataModels;
 using Sputnik.Generation;
@@ -237,11 +238,11 @@ namespace Sputnik.Modules
                 .WithColor(Color.Green)
                 .WithDescription($"Image radius: {trackResult.BlockRadius} blocks\nCenter position: X: {trackResult.Center.X} Z: {trackResult.Center.Y}\nTrack duration: 2 minutes")
                 .AddField("Player key", $"{string.Join("\n", emotes.Select(x => $"> <:{x.Value.ARGB:X}:{x.Value.EmoteId}> - {x.Key}"))}")
-                .WithImageUrl("attachment://result.png");
+                .WithImageUrl($"attachment://track-{target}-{trackResult.GetHashCode()}.png");
 
             if (Context.IsInteraction)
             {
-                await Context.Interaction.FollowupWithFileAsync("", fPath, "result.png", embed: embed.Build());
+                await Context.Interaction.FollowupWithFileAsync(fPath, embed: embed.Build());
             }
             else
             {
@@ -268,11 +269,11 @@ namespace Sputnik.Modules
                 .WithTitle("Image result")
                 .WithColor(Color.Green)
                 .WithDescription($"Heres the map at X: {x} Z: {z} in the world \"{world}\"")
-                .WithImageUrl("attachment://result.png");
+                .WithImageUrl($"attachment://{world}_{x}_{z}_{radius}.png.png");
 
             if (Context.IsInteraction)
             {
-                await Context.Interaction.FollowupWithFileAsync("", $"./BackgroundsCache/{world}_{x}_{z}_{radius}.png", "result.png", embed: embed.Build());
+                await Context.Interaction.FollowupWithFileAsync($"./BackgroundsCache/{world}_{x}_{z}_{radius}.png", embed: embed.Build());
             }
             else
             {

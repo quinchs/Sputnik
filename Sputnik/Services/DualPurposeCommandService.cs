@@ -53,7 +53,6 @@ namespace Sputnik.Services
             underlyingService = new CommandService(conf);
             this.Config = conf;
         }
-
         public Task<IResult> ExecuteAsync(ICommandContext context, int argPos, IServiceProvider services, MultiMatchHandling multiMatchHandling = MultiMatchHandling.Exception)
             => ExecuteAsync(context, context.Message.Content.Substring(argPos), services, multiMatchHandling);
 
