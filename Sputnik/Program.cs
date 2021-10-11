@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Dynmap;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Sputnik.Generation;
 using Sputnik.Services;
 using System;

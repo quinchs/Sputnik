@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Sputnik.DataModels;
 using Sputnik.Generation;
@@ -269,7 +270,7 @@ namespace Sputnik.Modules
                 .WithTitle("Image result")
                 .WithColor(Color.Green)
                 .WithDescription($"Heres the map at X: {x} Z: {z} in the world \"{world}\"")
-                .WithImageUrl($"attachment://{world}_{x}_{z}_{radius}.png.png");
+                .WithImageUrl($"attachment://{world}_{x}_{z}_{radius}.png");
 
             if (Context.IsInteraction)
             {

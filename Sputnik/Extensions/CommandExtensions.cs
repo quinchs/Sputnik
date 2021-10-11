@@ -18,14 +18,14 @@ namespace Sputnik
                     var props = new SlashCommandBuilder()
                     {
                         Name = command.Name,
-                        DefaultPermission = command.DefaultPermission,
+                        DefaultPermission = command.IsDefaultPermission,
                         Description = command.Description,
                         Options = command.Options?.Any() ?? false ? command.Options.Select(x => new SlashCommandOptionBuilder()
                         {
                             Type = x.Type,
-                            Required = x.Required ?? false,
+                            Required = x.IsRequired ?? false,
                             Name = x.Name,
-                            Default = x.Default,
+                            Default = x.IsDefault,
                             Description = x.Description,
                             Choices = x.Choices?.Any() ?? false ? x.Choices.Select(x => new ApplicationCommandOptionChoiceProperties()
                             {
@@ -48,9 +48,9 @@ namespace Sputnik
             return new SlashCommandOptionBuilder()
             {
                 Type = x.Type,
-                Required = x.Required ?? false,
+                Required = x.IsRequired ?? false,
                 Name = x.Name,
-                Default = x.Default,
+                Default = x.IsDefault,
                 Description = x.Description,
                 Choices = x.Choices?.Any() ?? false ? x.Choices.Select(y => new ApplicationCommandOptionChoiceProperties()
                 {

@@ -88,6 +88,7 @@ namespace Sputnik
             _logEvent += Logger__logEvent;
 
             _streams.Add(new StreamWriter(Console.OpenStandardOutput()));
+            //_streams.Add(new StreamWriter(Console.OpenStandardError()));
 
             AsmTypes = new List<Type>(Assembly.GetAssembly(typeof(Logger)).DefinedTypes.Select(x => x.AsType()));
 
